@@ -1,0 +1,21 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>{% block head_title %}{% endblock %}</title>
+        {% block stylesheet %}{% endblock %}
+    </head>
+    <body>
+        {% block content %}
+        {% endblock %}
+
+        {% block javascript %}
+        <script
+            src="https://code.jquery.com/jquery-3.4.1.min.js"
+            integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+            crossorigin="anonymous"></script>
+        <script src="{% static 'js/website.js' %}"></script>
+        {% endblock %}
+    </body>
+</html>

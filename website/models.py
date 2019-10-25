@@ -5,4 +5,5 @@ import uuid
 class TableRow(models.Model):
     title = models.CharField(max_length=255, default="", blank=True, null=True)
     body = models.TextField(default="", blank=True, null=True)
-    guid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    guid = models.UUIDField(default=uuid.uuid4, unique=False, editable=False)
+    created = models.DateTimeField(auto_now_add=True)
