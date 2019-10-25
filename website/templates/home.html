@@ -3,6 +3,8 @@
         <title></title>
     </head>
     <body>
-        <h1>Home</h1>
+        {% for file in files %}
+        <h3>{{file}}</h3>
+        {% endfor %}
     </body>
 </html>

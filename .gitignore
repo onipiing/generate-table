@@ -12,3 +12,4 @@ ingretools/settings.py
 *.sqlite3
 .env
 env/
+media/
