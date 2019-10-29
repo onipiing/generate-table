@@ -109,8 +109,6 @@ def create_table(request):
             else:
                 tmp_rows.append('<td class="confluenceTd"><p></p></td>')
 
-        print(len(tmp_rows), "\n")
-        print(len(HEADERS))
         # pdb.set_trace()
         table_rows.append({
             'title': result.title,
