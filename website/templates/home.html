@@ -4,5 +4,36 @@
     <h3>{{file}}</h3>
     {% endfor %}
 
-    <button id="btn-create-html" type="button">Create HTML</button>
+    <body class="theme-default aui-theme-default">
+        <div id="page">
+            <div id="main" class="aui-page-panel">
+                <div id="main-header">
+                    {% if error %}
+                        {{ error }}
+                    {% endif %}
+                </div>
+
+                <div id="content" class="view container">
+                    <div id="main-content" class="wiki-content group">
+                    	<div class="row">
+	                    	{% for row in rows %}
+	                    		{% if row.title %}
+                    				<div class="col-4">
+			                    		<input type="checkbox" name="{{row.id}}" value="{{row.id}}">
+			                    		<label>{{row.title}}</label>
+	                    			</div>
+	                    		{% endif %}
+	                    	{% endfor %}
+                    	</div>
+                    	{% if rows %}
+                    		<button id="btn-download-html" class="mt-5" type="button">Download HTML</button>
+                    	{% else %}
+                    		<button id="btn-create-html" class="mt-5" type="button">Create HTML</button>
+                    	{% endif %}
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
 {% endblock %}

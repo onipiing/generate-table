@@ -7,3 +7,7 @@ class TableRow(models.Model):
     body = models.TextField(default="", blank=True, null=True)
     guid = models.UUIDField(default=uuid.uuid4, unique=False, editable=False)
     created = models.DateTimeField(auto_now_add=True)
+
+
+class TableHeader(models.Model):
+	content = models.TextField(default="", blank=True, null=True)

@@ -1,8 +1,9 @@
 from __future__ import unicode_literals
 #-*- coding: utf-8 -*-
 from django.shortcuts import render
+from django.views.decorators.csrf import csrf_exempt
 from ingretools import settings
-from .models import TableRow
+from .models import TableRow, TableHeader
 
 import os
 import uuid
@@ -12,6 +13,8 @@ from lxml import etree
 from bs4 import BeautifulSoup
 
 import pdb
+SEARCH_KEY = 'Ingrédients'
+REQUIRED_FIELD = 'Effets'
 
 def merge_arrary_without_duplicate(arr1, arr2):
     return arr1 + list(set(arr2) - set(arr1))
@@ -28,8 +31,9 @@ def create_table(request):
 
     files =os.listdir(settings.PROJECT_ROOT)
     html_files = []
-    search_key = 'Ingrédients'
-    required_field = 'Effets'
+
+    TableHeader.objects.all().delete()
+    TableRow.objects.all().delete()
 
     # filter html files
     for a_file in files:
@@ -52,7 +56,7 @@ def create_table(request):
 
         HEADERS = merge_arrary_without_duplicate(HEADERS, theads)
         table_body = dict()
-        has_ingredients = True if search_key in theads else False
+        has_ingredients = True if SEARCH_KEY in theads else False
 
         if not has_ingredients:
             title_text = tree.xpath("//title/text()")[0].split(':')
@@ -79,7 +83,7 @@ def create_table(request):
                     
                     for idx, th in enumerate(theads):
                         td_xpath = ".//td[@class='confluenceTd'][{}]".format(idx)
-                        if theads[idx] != search_key:
+                        if theads[idx] != SEARCH_KEY:
                             td_str = etree.tostring(row.xpath(td_xpath)[0]).decode('utf-8')
                             table_body[theads[idx]] = td_str
                         else:
@@ -88,7 +92,7 @@ def create_table(request):
                             except:
                                 title = title
 
-                    if required_field in table_body.keys() and table_body[required_field] != "":
+                    if REQUIRED_FIELD in table_body.keys() and table_body[REQUIRED_FIELD] != "":
                         obj, created = TableRow.objects.get_or_create(title=title,
                                                                 body=json.dumps(table_body),
                                                                 guid=initial_guid)
@@ -97,13 +101,30 @@ def create_table(request):
                     else:
                         print('Row: {} has no effects!'.format(title))
 
-    results = TableRow.objects.filter(guid=initial_guid)
+    TableHeader.objects.get_or_create(content=json.dumps(HEADERS))
+    table_rows = TableRow.objects.all()
+    return render(request, 'home.html', {'rows': table_rows})
+
+
+@csrf_exempt
+def download_table(request):
+    if request.method == "GET":
+        return render(request, 'table.html', {'error': 'Method Get not allowed!'})
+
+    selected = json.loads(request.body)
+    results = TableRow.objects.filter(id__in=selected)
+    headers = TableHeader.objects.filter()
+    header = None
+    if len(headers) == 0:
+        return render(request, 'home.html', {'error': 'Please analyze html files before downloa'})
+
     table_rows = []
-    HEADERS.remove(search_key)
+    headers = json.loads(headers[0].content)
+    headers.remove(SEARCH_KEY)
     for result in results:
         tmp_body = json.loads(result.body)
         tmp_rows = []
-        for header in HEADERS:
+        for header in headers:
             if header in tmp_body.keys():
                 tmp_rows.append(tmp_body[header])
             else:
@@ -116,6 +137,6 @@ def create_table(request):
         })
 
     return render(request, 'table.html', {'rows': table_rows,
-                                        'headers': HEADERS,
+                                        'headers': headers,
                                         'created': results[0].created,
-                                        'range': range(len(HEADERS))})
+                                        'range': range(len(headers))})
