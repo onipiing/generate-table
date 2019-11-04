@@ -8,7 +8,6 @@ docs/_build_html/.doctrees/environment.pickle
 media
 apns/
 bk/
-ingretools/settings.py
 *.sqlite3
 .env
 env/
