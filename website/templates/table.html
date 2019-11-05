@@ -3759,7 +3759,23 @@ body.content-type-blogpost #main-header {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {% for row in rows %}
+                                        {% regroup rows by title as table_rows %}
+                                        {% for title, trows in table_rows %}
+                                            {% for trow in trows %}
+                                            <tr>
+                                                {% if forloop.first %}
+                                                    <td class="confluenceTd" rowspan="{{trows|length}}">
+                                                        <p>{{title}}</p>
+                                                    </td>
+                                                {% endif %}
+                                                {% for td in trow.body %}
+                                                    {{td|safe}}
+                                                {% endfor %}
+                                            </tr>
+                                            {% endfor %}
+                                        {% endfor %}
+
+                                        <!-- {% for row in rows %}
                                         <tr>
                                             <td class="confluenceTd">
                                                 <p>{{row.title}}</p>
@@ -3768,7 +3784,7 @@ body.content-type-blogpost #main-header {
                                                 {{td|safe}}
                                             {% endfor %}
                                         </tr>
-                                        {% endfor %}
+                                        {% endfor %} -->
                                     </tbody>
                                 </table>
                             </div>                                             

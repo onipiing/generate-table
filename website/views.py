@@ -2,12 +2,15 @@ from __future__ import unicode_literals
 #-*- coding: utf-8 -*-
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
+from django.db.models import Q
+from django.db.models import Count
 from ingretools import settings
 from .models import TableRow, TableHeader
 
 import os
 import uuid
 import json
+import operator
 
 from lxml import etree
 from bs4 import BeautifulSoup
@@ -42,6 +45,7 @@ def create_table(request):
 
     initial_guid = uuid.uuid4()
     for filename in html_files:
+        print("filename: ", filename)
         content = ''
         with open(os.path.join(settings.PROJECT_ROOT, filename)) as f:
             content = f.read()
@@ -75,31 +79,42 @@ def create_table(request):
 
         else:
             trows = tree.xpath("//table[@class='confluenceTable']//tbody//tr")
-            title = ''
+
             for row in trows:
                 table_body = dict()
                 tr_tbodys = row.xpath(".//td")
                 if len(tr_tbodys) > 0:
                     
                     for idx, th in enumerate(theads):
-                        td_xpath = ".//td[@class='confluenceTd'][{}]".format(idx)
+                        row_count = row.xpath(".//td[@class='confluenceTd']")
+                        if len(row_count) == len(theads):
+                            td_xpath = ".//td[@class='confluenceTd'][{}]".format(idx+1)
+                        else:
+                            td_xpath = ".//td[@class='confluenceTd'][{}]".format(idx)
                         if theads[idx] != SEARCH_KEY:
-                            td_str = etree.tostring(row.xpath(td_xpath)[0]).decode('utf-8')
+                            td_str = ''
+                            if len(row.xpath(td_xpath)) > 0:
+                                td_str = etree.tostring(row.xpath(td_xpath)[0]).decode('utf-8')
                             table_body[theads[idx]] = td_str
                         else:
-                            try:
+                            row_count = row.xpath(".//td[@class='confluenceTd']")
+                            if len(row_count) == len(theads):
                                 title = row.xpath(td_xpath)[0].xpath(".//text()")[0]
-                            except:
+                            else:
                                 title = title
 
-                    if REQUIRED_FIELD in table_body.keys() and table_body[REQUIRED_FIELD] != "":
-                        obj, created = TableRow.objects.get_or_create(title=title,
-                                                                body=json.dumps(table_body),
-                                                                guid=initial_guid)
-                        if created:
-                            print('Row: {} is created!'.format(title))
+                    if REQUIRED_FIELD in table_body.keys():
+                        effects_tree = etree.HTML(table_body[REQUIRED_FIELD])
+                        effects_value = effects_tree.xpath(".//text()")
+
+                        if len(effects_value) > 0:
+                            obj, created = TableRow.objects.get_or_create(title=title,
+                                                                    body=json.dumps(table_body),
+                                                                    guid=initial_guid)
+                            if created:
+                                print('TRow: {} is created!'.format(title))
                     else:
-                        print('Row: {} has no effects!'.format(title))
+                        print('TRow: {} has no effects!'.format(title))
 
     TableHeader.objects.get_or_create(content=json.dumps(HEADERS))
     table_rows = TableRow.objects.all()
@@ -112,7 +127,13 @@ def download_table(request):
         return render(request, 'table.html', {'error': 'Method Get not allowed!'})
 
     selected = json.loads(request.body)
-    results = TableRow.objects.filter(id__in=selected)
+    condition = Q(title__icontains=selected[0])
+    for filter_key in selected[1:]:
+        condition |= Q(title__icontains=filter_key)
+    results = TableRow.objects.filter(condition)
+    
+    print(results)
+
     headers = TableHeader.objects.filter()
     header = None
     if len(headers) == 0:
@@ -138,5 +159,5 @@ def download_table(request):
 
     return render(request, 'table.html', {'rows': table_rows,
                                         'headers': headers,
-                                        'created': results[0].created,
+                                        'created': None,
                                         'range': range(len(headers))})

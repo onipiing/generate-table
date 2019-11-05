@@ -6,10 +6,8 @@ $(document).ready(function () {
   $("#btn-download-html").click(function (e) {
     var selected = []
     $.each($("input:checked"), function(){
-      selected.push($(this).val());
+      selected.push($(this).siblings().first().text().trim());
     });
-
-    console.log(selected)
 
     fetch('/download_table/', {
       method: 'POST',
