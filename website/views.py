@@ -11,6 +11,7 @@ import os
 import uuid
 import json
 import operator
+import datetime
 
 from lxml import etree
 from bs4 import BeautifulSoup
@@ -117,7 +118,7 @@ def create_table(request):
                         print('TRow: {} has no effects!'.format(title))
 
     TableHeader.objects.get_or_create(content=json.dumps(HEADERS))
-    table_rows = TableRow.objects.all()
+    table_rows = TableRow.objects.values('title').order_by("title").distinct()
     return render(request, 'home.html', {'rows': table_rows})
 
 
@@ -130,10 +131,8 @@ def download_table(request):
     condition = Q(title__icontains=selected[0])
     for filter_key in selected[1:]:
         condition |= Q(title__icontains=filter_key)
-    results = TableRow.objects.filter(condition)
+    results = TableRow.objects.filter(condition).order_by("title")
     
-    print(results)
-
     headers = TableHeader.objects.filter()
     header = None
     if len(headers) == 0:
@@ -159,5 +158,5 @@ def download_table(request):
 
     return render(request, 'table.html', {'rows': table_rows,
                                         'headers': headers,
-                                        'created': None,
+                                        'created': datetime.datetime.now(),
                                         'range': range(len(headers))})
