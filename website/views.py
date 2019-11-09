@@ -68,13 +68,38 @@ def create_table(request):
             if len(title_text) > 0:
                 title = title_text[1].strip()
 
-            for idx, th in enumerate(theads):
-                td_str = etree.tostring(tbodys[idx]).decode('utf-8')
-                table_body[theads[idx]] = td_str
+            trows = tree.xpath("//table[@class='confluenceTable']//tbody//tr")
 
-            obj, created = TableRow.objects.get_or_create(title=title,
-                                                        body=json.dumps(table_body),
-                                                        guid=initial_guid)
+            for row in trows:
+                table_body = dict()
+                tr_tbodys = row.xpath(".//td")
+                if len(tr_tbodys) > 0:
+                    
+                    for idx, th in enumerate(theads):
+                        row_count = row.xpath(".//td[@class='confluenceTd']")
+                        if len(row_count) == len(theads):
+                            td_xpath = ".//td[@class='confluenceTd'][{}]".format(idx+1)
+                        else:
+                            td_xpath = ".//td[@class='confluenceTd'][{}]".format(idx)
+                        if theads[idx] != SEARCH_KEY:
+                            td_str = ''
+                            if len(row.xpath(td_xpath)) > 0:
+                                td_str = etree.tostring(row.xpath(td_xpath)[0]).decode('utf-8')
+                            table_body[theads[idx]] = td_str
+
+                    if REQUIRED_FIELD in table_body.keys():
+                        effects_tree = etree.HTML(table_body[REQUIRED_FIELD])
+                        effects_value = effects_tree.xpath(".//text()")
+
+                        if len(effects_value) > 0:
+                            obj, created = TableRow.objects.get_or_create(title=title,
+                                                                    body=json.dumps(table_body),
+                                                                    guid=initial_guid)
+                            if created:
+                                print('TRow: {} is created!'.format(title))
+                    else:
+                        print('TRow: {} has no effects!'.format(title))
+
             if created:
                 print('Row: {} is created!'.format(title))
 
@@ -140,7 +165,9 @@ def download_table(request):
 
     table_rows = []
     headers = json.loads(headers[0].content)
-    headers.remove(SEARCH_KEY)
+
+    if SEARCH_KEY in headers:
+        headers.remove(SEARCH_KEY)
     for result in results:
         tmp_body = json.loads(result.body)
         tmp_rows = []
@@ -150,7 +177,6 @@ def download_table(request):
             else:
                 tmp_rows.append('<td class="confluenceTd"><p></p></td>')
 
-        # pdb.set_trace()
         table_rows.append({
             'title': result.title,
             'body': tmp_rows
