@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block content %}
+    {% for file in files %}
+    <h3>{{file}}</h3>
+    {% endfor %}
+
+    <body class="theme-default aui-theme-default">
+        <div id="page">
+            <div id="main" class="aui-page-panel">
+                <div id="main-header">
+                    <p>Please select one of the ingredients</p>
+                    <a href="/create_table/">Go back</a>
+                </div>
+            </div>
+        </div>
+    </body>
+{% endblock %}
